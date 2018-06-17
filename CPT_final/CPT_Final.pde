@@ -5,7 +5,8 @@ import ddf.minim.signals.*;
 import ddf.minim.spi.*;
 import ddf.minim.ugens.*;
 
-PImage zombiePhoto; //image from https://www.pinterest.com/pin/220746819207739812/
+PImage zombiePhoto;//image from https://www.pinterest.com/pin/220746819207739812/
+PImage crossHair; //https://www.google.ca/search?q=small+crosshair&source=lnms&tbm=isch&sa=X&ved=0ahUKEwiM-YXw5NnbAhUMyoMKHUm6DiMQ_AUICigB&biw=1920&bih=974#imgrc=bQCx5I90VQoHmM:
 
 // sound from:http://soundbible.com/2095-Mossberg-500-Pump-Shotgun.html
 //sound reload http://soundbible.com/1996-Shotgun-Reload-Old.html
@@ -28,6 +29,17 @@ int wait = 2000;
 boolean reload;
 long reloadStartTime;
 Boolean started = false;
+boolean healthregen;
+int score = 0;
+float maxHealth = 500;
+float rectWidth = 100;
+
+//mode variables
+int intro = 0;
+int menu = 1;
+int play= 2;
+int over= 3;
+int mode = 0; // 0 is main menu, 1 means play, 2 means game over
 
 //enemies
 float zombieSpeed = 1.2;
@@ -48,30 +60,18 @@ float z4Speed = 2;
 PVector z5; //BOSS
 float z5Speed = 1.5;
 int z5H = 5;
-
-
-
-boolean healthregen;
-int score = 0;
-
-float maxHealth = 500;
-float rectWidth = 100;
-
-
-int intro = 0;
-int menu = 1;
-int play= 2;
-int over= 3;
-int mode = 0; // 0 is main menu, 1 means play, 2 means game over
-
+PVector z6; //health zombie 2
+float z6Speed = 2;
+ 
 Player p1 = new Player(300, 300, 500, 10);
-
 
 void setup() {
   size(600,600);
   
+  //photos
   zombiePhoto = loadImage("zombiePhoto.jpg");
-  
+ 
+  //sound
   minim = new Minim(this);
   shot = minim.loadFile("shot.mp3");
   input = minim.getLineIn();
@@ -92,13 +92,12 @@ void setup() {
   z = new PVector(-1000,1000 , 0);
   z1 = new PVector(2000, -2000, 0);
   z2 = new PVector(5000, 5000, 0);
-  z3 = new PVector(-10000, -10000, 0); 
+  z3 = new PVector(-12000, -12000, 0); 
   z4 = new PVector(7000, 7000, 0);
-  z5 = new PVector(5500,5500, 0);
+  z5 = new PVector(6200,6200, 0);
+  z6 = new PVector(10000, -10000);
 
  
-  
-
   ellipseMode(CENTER);
   noStroke();
   fill(255, 0,0);
@@ -111,6 +110,8 @@ void draw() {
 
   background(176,196,222);
   
+  
+  //mode setup
   if(mode==intro){
     doIntroMode();
   
@@ -139,25 +140,24 @@ void draw() {
   
   //aim
   fill(255, 0, 0, 100);
-  ellipse(mouseX, mouseY, 10, 10); 
+  ellipse(mouseX, mouseY, 5, 5); 
   
-  
-  
+  //ammo and score
   textSize(15);{
-    fill(0,102,153);
-    text("Ammo", 10, 60);
-    text(p1.maxAmmo , 10, 80);
-    text("/10",28,80);}
+  fill(0,102,153);
+  text("Ammo", 10, 60);
+  text(p1.maxAmmo , 10, 80);
+  text("/10",28,80);}
+  text("Score:", 520 ,20);
+  text(score, 576, 20);
   
-
-    text("Score:", 520 ,20);
-    text(score, 576, 20);
-  
-  
+  //Boss text
   text("Boss", z5.x - 20, z5.y -20);
-  // i didnt know how to make an object follow player so i copied most of this code https://forum.processing.org/one/topic/how-do-i-get-objects-to-follow-a-separate-moving-object.html
  
- // enemy list
+ 
+ // i didnt know how to make an object follow player so i copied most of this code https://forum.processing.org/one/topic/how-do-i-get-objects-to-follow-a-separate-moving-object.html
+ 
+ // Enemies
  
  // small zombie
   fill(0,204, 0);
@@ -226,77 +226,86 @@ void draw() {
   float newY5 = sin(angle5)*z5Speed + z5.y;
   z5.set(newX5, newY5, 0.);
   
+  // Health Zombie (z6)
+  
+  fill(255,0,0);
+  ellipse(z6.x, z6.y,20, 20);
+  float angle6 = atan2(p1.y-z6.y, p1.x-z6.x);
+  float newX6 = cos(angle6)*z6Speed + z6.x;
+  float newY6= sin(angle6)*z6Speed + z6.y;
+  z6.set(newX6, newY6, 0.);
+  
   
      
  
  
 //zombie dude
-  if(zombieDude.x - p1.x >= -0.1 && zombieDude.y - p1.y >= -0.1 && zombieDude.y - p1.y <= 1 && zombieDude.x - p1.x <= 1){
+if(zombieDude.x - p1.x >= -0.1 && zombieDude.y - p1.y >= -0.1 && zombieDude.y - p1.y <= 1 && zombieDude.x - p1.x <= 1){
         p1.health--;
         
     p1.health=constrain(p1.health, 0, 500);
-   } else if(zombieDude.x - p1.x >= -0.1 && zombieDude.y - p1.y >= -0.1 && zombieDude.y - p1.y <= 1 && zombieDude.x - p1.x >= 1){
+  }else if(zombieDude.x - p1.x >= -0.1 && zombieDude.y - p1.y >= -0.1 && zombieDude.y - p1.y <= 1 && zombieDude.x - p1.x >= 1){
         p1.health--;
         
         p1.health=constrain(p1.health, 0, 500);
-  } else if(zombieDude.x - p1.x >= -0.1 && zombieDude.y - p1.y >= -0.1 && zombieDude.y - p1.y >= 1 && zombieDude.x - p1.x <= 1)
+    }else if(zombieDude.x - p1.x >= -0.1 && zombieDude.y - p1.y >= -0.1 && zombieDude.y - p1.y >= 1 && zombieDude.x - p1.x <= 1)
         p1.health--;
   
         p1.health=constrain(p1.health, 0, 500);
         
 //zombie
-  if(z.x - p1.x >= -0.1 && z.y - p1.y >= -0.1 && z.y - p1.y <= 1 && z.x - p1.x <= 1){
+if(z.x - p1.x >= -0.1 && z.y - p1.y >= -0.1 && z.y - p1.y <= 1 && z.x - p1.x <= 1){
         p1.health--;
         
     p1.health=constrain(p1.health, 0, 500);
-   } else if(z.x - p1.x >= -0.1 && z.y - p1.y >= -0.1 && z.y - p1.y <= 1 && z.x - p1.x >= 1){
+  }else if(z.x - p1.x >= -0.1 && z.y - p1.y >= -0.1 && z.y - p1.y <= 1 && z.x - p1.x >= 1){
         p1.health--;
         
         p1.health=constrain(p1.health, 0, 500);
-  } else if(z.x - p1.x >= -0.1 && z.y - p1.y >= -0.1 && z.y - p1.y >= 1 && z.x - p1.x <= 1)
+    }else if(z.x - p1.x >= -0.1 && z.y - p1.y >= -0.1 && z.y - p1.y >= 1 && z.x - p1.x <= 1)
         p1.health--;
   
         p1.health=constrain(p1.health, 0, 500);
         
 // z1
-  if(z1.x - p1.x >= -0.1 && z1.y - p1.y >= -0.1 && z1.y - p1.y <= 1 && z1.x - p1.x <= 1){
+if(z1.x - p1.x >= -0.1 && z1.y - p1.y >= -0.1 && z1.y - p1.y <= 1 && z1.x - p1.x <= 1){
         p1.health--;
         
     p1.health=constrain(p1.health, 0, 500);
-   } else if(z1.x - p1.x >= -0.1 && z1.y - p1.y >= -0.1 && z1.y - p1.y <= 1 && z1.x - p1.x >= 1){
+  }else if(z1.x - p1.x >= -0.1 && z1.y - p1.y >= -0.1 && z1.y - p1.y <= 1 && z1.x - p1.x >= 1){
         p1.health--;
         
         p1.health=constrain(p1.health, 0, 500);
-  } else if(z1.x - p1.x >= -0.1 && z1.y - p1.y >= -0.1 && z1.y - p1.y >= 1 && z1.x - p1.x <= 1)
+    }else if(z1.x - p1.x >= -0.1 && z1.y - p1.y >= -0.1 && z1.y - p1.y >= 1 && z1.x - p1.x <= 1)
         p1.health--;
   
         p1.health=constrain(p1.health, 0, 500);
 // z2 (fast boy)
 
- if(z2.x - p1.x >= -0.1 && z2.y - p1.y >= -0.1 && z2.y - p1.y <= 1 && z2.x - p1.x <= 1){
+if(z2.x - p1.x >= -0.1 && z2.y - p1.y >= -0.1 && z2.y - p1.y <= 1 && z2.x - p1.x <= 1){
         p1.health--;
         
     p1.health=constrain(p1.health, 0, 500);
-   } else if(z2.x - p1.x >= -0.1 && z2.y - p1.y >= -0.1 && z2.y - p1.y <= 1 && z2.x - p1.x >= 1){
+  }else if(z2.x - p1.x >= -0.1 && z2.y - p1.y >= -0.1 && z2.y - p1.y <= 1 && z2.x - p1.x >= 1){
         p1.health--;
         
         p1.health=constrain(p1.health, 0, 500);
-  } else if(z2.x - p1.x >= -0.1 && z2.y - p1.y >= -0.1 && z2.y - p1.y >= 1 && z2.x - p1.x <= 1)
+    }else if(z2.x - p1.x >= -0.1 && z2.y - p1.y >= -0.1 && z2.y - p1.y >= 1 && z2.x - p1.x <= 1)
         p1.health--;
   
         p1.health=constrain(p1.health, 0, 500);
         
 // fast boy 2 (z3)
         
-   if(z3.x - p1.x >= -0.1 && z3.y - p1.y >= -0.1 && z3.y - p1.y <= 1 && z3.x - p1.x <= 1){
+if(z3.x - p1.x >= -0.1 && z3.y - p1.y >= -0.1 && z3.y - p1.y <= 1 && z3.x - p1.x <= 1){
         p1.health--;
         
     p1.health=constrain(p1.health, 0, 500);
-   } else if(z3.x - p1.x >= -0.1 && z3.y - p1.y >= -0.1 && z3.y - p1.y <= 1 && z3.x - p1.x >= 1){
+  }else if(z3.x - p1.x >= -0.1 && z3.y - p1.y >= -0.1 && z3.y - p1.y <= 1 && z3.x - p1.x >= 1){
         p1.health--;
         
         p1.health=constrain(p1.health, 0, 500);
-  } else if(z3.x - p1.x >= -0.1 && z3.y - p1.y >= -0.1 && z3.y - p1.y >= 1 && z3.x - p1.x <= 1)
+    }else if(z3.x - p1.x >= -0.1 && z3.y - p1.y >= -0.1 && z3.y - p1.y >= 1 && z3.x - p1.x <= 1)
         p1.health--;
   
         p1.health=constrain(p1.health, 0, 500);
@@ -307,26 +316,26 @@ if(z4.x - p1.x >= -0.1 && z4.y - p1.y >= -0.1 && z4.y - p1.y <= 1 && z4.x - p1.x
         p1.health--;
         
     p1.health=constrain(p1.health, 0, 500);
-   } else if(z4.x - p1.x >= -0.1 && z4.y - p1.y >= -0.1 && z4.y - p1.y <= 1 && z4.x - p1.x >= 1){
+  }else if(z4.x - p1.x >= -0.1 && z4.y - p1.y >= -0.1 && z4.y - p1.y <= 1 && z4.x - p1.x >= 1){
         p1.health--;
         
         p1.health=constrain(p1.health, 0, 500);
-  } else if(z4.x - p1.x >= -0.1 && z4.y - p1.y >= -0.1 && z4.y - p1.y >= 1 && z4.x - p1.x <= 1)
+    }else if(z4.x - p1.x >= -0.1 && z4.y - p1.y >= -0.1 && z4.y - p1.y >= 1 && z4.x - p1.x <= 1)
         p1.health--;
   
         p1.health=constrain(p1.health, 0, 500);
         
 //big slam guy
 
-  if(big.x - p1.x >= -0.1 && big.y - p1.y >= -0.1 && big.y - p1.y <= 1 && big.x - p1.x <= 1){
+if(big.x - p1.x >= -0.1 && big.y - p1.y >= -0.1 && big.y - p1.y <= 1 && big.x - p1.x <= 1){
         p1.health--;
         
     p1.health=constrain(p1.health, 0, 500);
-   } else if(big.x - p1.x >= -0.1 && big.y - p1.y >= -0.1 && big.y - p1.y <= 1 && big.x - p1.x >= 1){
+  }else if(big.x - p1.x >= -0.1 && big.y - p1.y >= -0.1 && big.y - p1.y <= 1 && big.x - p1.x >= 1){
         p1.health--;
         
         p1.health=constrain(p1.health, 0, 500);
-  } else if(big.x - p1.x >= -0.1 && big.y - p1.y >= -0.1 && big.y - p1.y >= 1 && big.x - p1.x <= 1)
+    }else if(big.x - p1.x >= -0.1 && big.y - p1.y >= -0.1 && big.y - p1.y >= 1 && big.x - p1.x <= 1)
         p1.health--  ;
   
         p1.health=constrain(p1.health, 0, 500);
@@ -337,18 +346,37 @@ if(z5.x - p1.x >= -0.1 && z5.y - p1.y >= -0.1 && z5.y - p1.y <= 1 && z5.x - p1.x
         p1.health--;
         
     p1.health=constrain(p1.health, 0, 500);
-   } else if(z5.x - p1.x >= -0.1 && z5.y - p1.y >= -0.1 && z5.y - p1.y <= 1 && z5.x - p1.x >= 1){
+  }else if(z5.x - p1.x >= -0.1 && z5.y - p1.y >= -0.1 && z5.y - p1.y <= 1 && z5.x - p1.x >= 1){
         p1.health--;
         
         p1.health=constrain(p1.health, 0, 500);
-  } else if(z5.x - p1.x >= -0.1 && z5.y - p1.y >= -0.1 && z5.y - p1.y >= 1 && z5.x - p1.x <= 1)
+    }else if(z5.x - p1.x >= -0.1 && z5.y - p1.y >= -0.1 && z5.y - p1.y >= 1 && z5.x - p1.x <= 1)
         p1.health--;
   
         p1.health=constrain(p1.health, 0, 500);
         
-        if(p1.health == 0) mode = 3;
+// Health boy
         
-        } else if (mode == over) {
+  if(z6.x - p1.x >= -0.1 && z6.y - p1.y >= -0.1 && z6.y - p1.y <= 1 && z6.x - p1.x <= 1){
+        p1.health--;
+        
+    p1.health=constrain(p1.health, 0, 500);
+   }else if(z6.x - p1.x >= -0.1 && z6.y - p1.y >= -0.1 && z6.y - p1.y <= 1 && z6.x - p1.x >= 1){
+        p1.health--;
+        
+        p1.health=constrain(p1.health, 0, 500);
+    }else if(z6.x - p1.x >= -0.1 && z6.y - p1.y >= -0.1 && z6.y - p1.y >= 1 && z6.x - p1.x <= 1)
+        p1.health--;
+  
+        p1.health=constrain(p1.health, 0, 500);
+        
+       
+        
+        
+//death
+  
+if(p1.health == 0) mode = 3;
+  }else if (mode == over) {
           doGameOver();
       }
 }
@@ -404,8 +432,7 @@ public void doMenuMode() {
   
   if (keyPressed) {
     if (key == 'p') mode = 2;
-  
-}
+  }
 }
 
 public void doGameOver() {
@@ -422,8 +449,7 @@ public void doGameOver() {
   
   if (keyPressed) {
     if (key == 'k') mode = 0;
-  
-}
+  }
 }
 
 
@@ -445,20 +471,13 @@ void display() {
       p1.y = 575;
     }
     
-   
-      
-    
-    
-
-    //reload system
+//reload system
 if (reload) {
   if (millis() > (reloadStartTime + wait)) {
     p1.maxAmmo= 10;
     reload = false;
   }
-  
 }
-
 
 }
 void keyPressed() {//movement (wasd) and reload
@@ -507,16 +526,10 @@ void keyPressed() {//movement (wasd) and reload
       p1.maxAmmo = 0;
   }
 
-  
+  //ENEMY HITBOXES
 
-
-  
-  
-  
-  
-  
 //zombieDude HITBOX
-    if (mousePressed == true && p1.maxAmmo > 0 && mouseX-zombieDude.x >= -4 && mouseY-zombieDude.y >= -4 && mouseY-zombieDude.y <= 4 && mouseX-zombieDude.x <= 4 ){
+  if (mousePressed == true && p1.maxAmmo > 0 && mouseX-zombieDude.x >= -4 && mouseY-zombieDude.y >= -4 && mouseY-zombieDude.y <= 4 && mouseX-zombieDude.x <= 4 ){
       score ++ ;
       zombieDude.x = 1000;
       zombieDude.y = 1000;
@@ -527,8 +540,7 @@ void keyPressed() {//movement (wasd) and reload
     }
     
 //zombie hitbox
-   
-   if (mousePressed == true && p1.maxAmmo > 0 && mouseX-z.x >= -4 && mouseY-z.y >= -4 && mouseY-z.y <= 4 && mouseX-z.x <= 4 ){
+   if(mousePressed == true && p1.maxAmmo > 0 && mouseX-z.x >= -4 && mouseY-z.y >= -4 && mouseY-z.y <= 4 && mouseX-z.x <= 4 ){
       score ++ ;
       z.x = 900;
       z.y = -700;
@@ -537,9 +549,9 @@ void keyPressed() {//movement (wasd) and reload
       z.x = 1000;
       z.y = 800; 
     }
+    
 //z1 hitbox
-
-    if (mousePressed == true && p1.maxAmmo > 0 && mouseX-z1.x >= -4 && mouseY-z1.y >= -4 && mouseY-z1.y <= 4 && mouseX-z1.x <= 4 ){
+  if(mousePressed == true && p1.maxAmmo > 0 && mouseX-z1.x >= -4 && mouseY-z1.y >= -4 && mouseY-z1.y <= 4 && mouseX-z1.x <= 4 ){
       score ++ ;
       z1.x = -700;
       z1.y = 700;
@@ -550,8 +562,7 @@ void keyPressed() {//movement (wasd) and reload
     }
     
 //z2 (fastBoy) hitBox
-
-if (mousePressed == true && p1.maxAmmo > 0 && mouseX-z2.x >= -4 && mouseY-z2.y >= -4 && mouseY-z2.y <= 4 && mouseX-z2.x <= 4 ){
+  if(mousePressed == true && p1.maxAmmo > 0 && mouseX-z2.x >= -4 && mouseY-z2.y >= -4 && mouseY-z2.y <= 4 && mouseX-z2.x <= 4 ){
       score ++ ;
       z2.x = -5000;
       z2.y = 5000;
@@ -562,8 +573,7 @@ if (mousePressed == true && p1.maxAmmo > 0 && mouseX-z2.x >= -4 && mouseY-z2.y >
        }
        
 //z3 (fast BOY 2) hitbox
-
-if (mousePressed == true && p1.maxAmmo > 0 && mouseX-z3.x >= -4 && mouseY-z3.y >= -4 && mouseY-z3.y <= 4 && mouseX-z3.x <= 4 ){
+  if(mousePressed == true && p1.maxAmmo > 0 && mouseX-z3.x >= -4 && mouseY-z3.y >= -4 && mouseY-z3.y <= 4 && mouseX-z3.x <= 4 ){
       score ++ ;
       z3.x = 10000;
       z3.y = -10000;
@@ -572,9 +582,9 @@ if (mousePressed == true && p1.maxAmmo > 0 && mouseX-z3.x >= -4 && mouseY-z3.y >
       z3.x = 10000;
       z3.y = 10000; 
     }
+    
 //z4 (health boy) hitbox
-
-if (mousePressed == true && p1.maxAmmo > 0 && mouseX-z4.x >= -4 && mouseY-z4.y >= -4 && mouseY-z4.y <= 4 && mouseX-z4.x <= 4 ){
+  if(mousePressed == true && p1.maxAmmo > 0 && mouseX-z4.x >= -4 && mouseY-z4.y >= -4 && mouseY-z4.y <= 4 && mouseX-z4.x <= 4 ){
       score ++ ;
       p1.health += 100;
       z4.x = -4000; //adrian lee did nOThgin
@@ -586,26 +596,23 @@ if (mousePressed == true && p1.maxAmmo > 0 && mouseX-z4.x >= -4 && mouseY-z4.y >
       z4.y = 4000; 
     }
 
-   
-      
-      
 //Slammer HITBOX
-     if (mousePressed == true && p1.maxAmmo > 0 && mouseX-big.x >= -4 && mouseY-big.y >= -4 && mouseY-big.y <= 4 && mouseX-big.x <= 4 ){
+  if(mousePressed == true && p1.maxAmmo > 0 && mouseX-big.x >= -4 && mouseY-big.y >= -4 && mouseY-big.y <= 4 && mouseX-big.x <= 4 ){
       bigH--;
     }else if(mousePressed == true && p1.maxAmmo >0 && mouseX-big.x >= -4 && mouseY-big.y >= -4 && mouseY-big.y <= 4 && mouseX-big.x >= 4){
       bigH--;
     }
     
-    if(bigH == 0){
-     score ++;
-     big.x = 4000;
-     big.y = 4000;
-     bigH ++;
-     bigH ++;
+      if(bigH == 0){
+         score ++;
+         big.x = 4000;
+         big.y = 4000;
+         bigH ++;
+         bigH ++;
   }
   
 //Boss
-if (mousePressed == true && p1.maxAmmo > 0 && mouseX-z5.x >= -4 && mouseY-z5.y >= -4 && mouseY-z5.y <= 4 && mouseX-z5.x <= 4 ){
+  if(mousePressed == true && p1.maxAmmo > 0 && mouseX-z5.x >= -4 && mouseY-z5.y >= -4 && mouseY-z5.y <= 4 && mouseX-z5.x <= 4 ){
       z5H--;
     }else if(mousePressed == true && p1.maxAmmo >0 && mouseX-z5.x >= -4 && mouseY-z5.y >= -4 && mouseY-z5.y <= 4 && mouseX-z5.x >= 4){
       z5H--;
@@ -617,22 +624,26 @@ if (mousePressed == true && p1.maxAmmo > 0 && mouseX-z5.x >= -4 && mouseY-z5.y >
      z5.y = 10000;
      z5H += 5;
     }
+    
+// z6 (health zombie) 
+  if(mousePressed == true && p1.maxAmmo > 0 && mouseX-z6.x >= -4 && mouseY-z6.y >= -4 && mouseY-z6.y <= 4 && mouseX-z6.x <= 4 ){
+      score ++ ;
+      p1.health += 100;
+      z6.x = 7000; //adrian lee did nOThgin
+      z6.y = 7000;
+    }else if(mousePressed == true && p1.maxAmmo >0 && mouseX-z6.x >= -4 && mouseY-z6.y >= -4 && mouseY-z6.y <= 4 && mouseX-z6.x >= 4){
+      score ++ ;
+      p1.health += 100;
+      z6.x = -4000;
+      z6.y = 9000; 
+    }  
   }
     
-   
-      
-      
-     void mouseReleased() {
-       shot.close();
-       shot = minim.loadFile("shot.mp3");
-      
-  }
-
-class Player {
-  public float x;
-  public float y;
-  public int health;
-  public int maxAmmo;
+  class Player {
+    public float x;
+    public float y;
+    public int health;
+    public int maxAmmo;
  
 
   public Player(float x, float y, int health, int maxAmmo) {
